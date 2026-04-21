@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Health Updates</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #f4f6f9;
+    color: #1a1a2e;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  .top-bar {
+    background: #ffffff;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 1rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .top-bar h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a2e;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .top-bar h1 span.icon {
+    width: 32px; height: 32px;
+    background: #ebf4ff;
+    border-radius: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .badge-total {
+    font-size: 12px;
+    background: #f1f5f9;
+    color: #64748b;
+    padding: 4px 12px;
+    border-radius: 99px;
+    border: 1px solid #e2e8f0;
+  }
+
+  /* ── Main layout ── */
+  .page { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+
+  /* ── Stats row ── */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 1.5rem;
+  }
+  .stat {
+    background: #ffffff;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+    padding: 1rem 1.25rem;
+  }
+  .stat-label { font-size: 12px; color: #64748b; margin-bottom: 4px; }
+  .stat-value { font-size: 26px; font-weight: 600; }
+  .sv-green  { color: #16a34a; }
+  .sv-teal   { color: #0d9488; }
+  .sv-amber  { color: #d97706; }
+  .sv-red    { color: #dc2626; }
+
+  /* ── Filters ── */
+  .filters {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1.5rem;
+  }
+  .filter-btn {
+    font-size: 13px; font-family: inherit;
+    padding: 6px 16px;
+    border-radius: 99px;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { background: #f8fafc; border-color: #cbd5e1; }
+  .filter-btn.active {
+    background: #1e40af; color: #ffffff; border-color: transparent;
+  }
+
+  /* ── Card grid ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+
+  /* ── Patient card ── */
+  .card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 1.1rem 1.25rem;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    border-color: #cbd5e1;
+  }
+
+  .card-header {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+  }
+  .avatar {
+    width: 42px; height: 42px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 600; flex-shrink: 0;
+  }
+  .av-blue   { background: #dbeafe; color: #1e40af; }
+  .av-teal   { background: #ccfbf1; color: #0f766e; }
+  .av-purple { background: #ede9fe; color: #6d28d9; }
+  .av-coral  { background: #fee2e2; color: #b91c1c; }
+  .av-green  { background: #dcfce7; color: #15803d; }
+
+  .patient-name { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+  .patient-id   { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+
+  .status-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .pill {
+    font-size: 11px; font-weight: 600;
+    padding: 4px 12px; border-radius: 99px;
+    letter-spacing: 0.02em;
+  }
+  .pill-stable      { background: #dcfce7; color: #15803d; }
+  .pill-critical    { background: #fee2e2; color: #b91c1c; }
+  .pill-improving   { background: #ccfbf1; color: #0f766e; }
+  .pill-observation { background: #fef3c7; color: #92400e; }
+
+  .temp-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 14px; font-weight: 600; color: #1a1a2e;
+  }
+  .temp-dot { width: 9px; height: 9px; border-radius: 50%; }
+  .dot-normal { background: #16a34a; }
+  .dot-high   { background: #dc2626; }
+  .dot-low    { background: #2563eb; }
+
+  .card-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 10px;
+    border-top: 1px solid #f1f5f9;
+    flex-wrap: wrap; gap: 6px;
+  }
+  .card-time { font-size: 12px; color: #94a3b8; }
+  .dept-tag {
+    font-size: 11px; background: #f8fafc; color: #64748b;
+    padding: 3px 10px; border-radius: 6px; border: 1px solid #e2e8f0;
+  }
+
+  /* ── Empty state ── */
+  .empty {
+    grid-column: 1 / -1;
+    text-align: center; padding: 3rem;
+    color: #94a3b8; font-size: 15px;
+  }
+
+  /* ── Responsive tweaks ── */
+  @media (max-width: 480px) {
+    .top-bar { padding: 0.85rem 1rem; }
+    .page { padding: 1rem 0.75rem 2rem; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="top-bar">
+  <h1>
+    <span class="icon">🏥</span>
+    Health Updates
+  </h1>
+  <span class="badge-total" id="total-badge">6 patients</span>
+</div>
+
+<div class="page">
+
+  <!-- Summary stats -->
+  <div class="stats">
+    <div class="stat">
+      <div class="stat-label">Stable</div>
+      <div class="stat-value sv-green" id="count-stable">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Improving</div>
+      <div class="stat-value sv-teal" id="count-improving">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Observation</div>
+      <div class="stat-value sv-amber" id="count-obs">0</div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Critical</div>
+      <div class="stat-value sv-red" id="count-critical">0</div>
+    </div>
+  </div>
+
+  <!-- Filter buttons -->
+  <div class="filters">
+    <button class="filter-btn active" onclick="filter('all', this)">All</button>
+    <button class="filter-btn" onclick="filter('Stable', this)">Stable</button>
+    <button class="filter-btn" onclick="filter('Improving', this)">Improving</button>
+    <button class="filter-btn" onclick="filter('Observation', this)">Observation</button>
+    <button class="filter-btn" onclick="filter('Critical', this)">Critical</button>
+  </div>
+
+  <!-- Card grid -->
+  <div class="grid" id="grid"></div>
+
+</div>
+
+<script>
+  /* ── Sample data ──
+     Replace this array with your Django template data, e.g.:
+     const patients = {{ updates|safe }};
+     Make sure each object has: name, status, temperature, department, created_at
+  ── */
+  const patients = [
+    { name: "Anita Sharma",  status: "Stable",      temperature: 36.8, department: "General Ward", created_at: "Today, 9:14 AM" },
+    { name: "Rohan Thapa",   status: "Critical",     temperature: 39.5, department: "ICU",          created_at: "Today, 9:02 AM" },
+    { name: "Priya Karki",   status: "Improving",    temperature: 37.1, department: "Recovery",     created_at: "Today, 8:47 AM" },
+    { name: "Bikram Rai",    status: "Observation",  temperature: 38.2, department: "Emergency",    created_at: "Today, 8:30 AM" },
+    { name: "Sita Poudel",   status: "Stable",       temperature: 36.6, department: "Pediatrics",   created_at: "Yesterday, 11:55 PM" },
+    { name: "Dev Gurung",    status: "Improving",    temperature: 37.4, department: "Orthopedics",  created_at: "Yesterday, 10:20 PM" },
+  ];
+
+  const AVATAR_COLORS = ["av-blue","av-teal","av-purple","av-coral","av-green"];
+  const PILL_CLASS = {
+    Stable:      "pill-stable",
+    Critical:    "pill-critical",
+    Improving:   "pill-improving",
+    Observation: "pill-observation",
+  };
+
+  function initials(name) {
+    return name.split(" ").map(w => w[0]).join("").toUpperCase();
+  }
+
+  function tempDotClass(t) {
+    if (t >= 38.5) return "dot-high";
+    if (t <= 36.0) return "dot-low";
+    return "dot-normal";
+  }
+
+  function renderCards(list) {
+    const grid = document.getElementById("grid");
+    if (!list.length) {
+      grid.innerHTML = '<div class="empty">No patients match this filter.</div>';
+      return;
+    }
+    grid.innerHTML = list.map((p, i) => `
+      <div class="card">
+        <div class="card-header">
+          <div class="avatar ${AVATAR_COLORS[i % AVATAR_COLORS.length]}">${initials(p.name)}</div>
+          <div>
+            <div class="patient-name">${p.name}</div>
+            <div class="patient-id">Patient #${1001 + i}</div>
+          </div>
+        </div>
+        <div class="status-row">
+          <span class="pill ${PILL_CLASS[p.status] || ''}">${p.status}</span>
+          <span class="temp-badge">
+            <span class="temp-dot ${tempDotClass(p.temperature)}"></span>
+            ${parseFloat(p.temperature).toFixed(1)}°C
+          </span>
+        </div>
+        <div class="card-footer">
+          <span class="card-time">${p.created_at}</span>
+          <span class="dept-tag">${p.department}</span>
+        </div>
+      </div>
+    `).join("");
+  }
+
+  function updateStats(list) {
+    document.getElementById("count-stable").textContent    = list.filter(p => p.status === "Stable").length;
+    document.getElementById("count-improving").textContent = list.filter(p => p.status === "Improving").length;
+    document.getElementById("count-obs").textContent       = list.filter(p => p.status === "Observation").length;
+    document.getElementById("count-critical").textContent  = list.filter(p => p.status === "Critical").length;
+    const n = list.length;
+    document.getElementById("total-badge").textContent = n + " patient" + (n !== 1 ? "s" : "");
+  }
+
+  function filter(status, btn) {
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const filtered = status === "all" ? patients : patients.filter(p => p.status === status);
+    renderCards(filtered);
+    updateStats(filtered);
+  }
+
+  /* Initial render */
+  renderCards(patients);
+  updateStats(patients);
+</script>
+
+</body>
+</html>
