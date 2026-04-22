@@ -41,11 +41,12 @@ pipeline {
             }
         }
 
-        stage('Build Docker Image') {
+            stage('🐳 Build Docker Image') {
             steps {
-                sh '''
-                  docker build -t ${IMAGE_NAME}:latest .
-                '''
+            sh '''
+                docker pull python:3.11-slim || true
+                docker build --no-cache -t healthupdate:latest .
+            '''
             }
         }
     }
