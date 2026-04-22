@@ -2,10 +2,9 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME        = "django_health_app"
-        SONAR_SERVER    = "SonarQube"
-        SLACK_CHANNEL   = "#jenkins-alerts"
-        APP_URL         = "http://localhost:8021"
+        APP_NAME     = "django_health_app"
+        SONAR_SERVER = "SonarQube"
+        APP_URL      = "http://localhost:8021"
     }
 
     options {
@@ -74,7 +73,15 @@ pipeline {
     post {
         always {
             script {
-                notifySlack(currentBuild.currentResult)
+                slackSend(
+                    color: currentBuild.currentResult == 'SUCCESS' ? 'good' : 'danger',
+                    message: """
+*CI RESULT:* ${currentBuild.currentResult}
+*Job:* ${env.JOB_NAME}
+*Build:* #${env.BUILD_NUMBER}
+*URL:* ${env.BUILD_URL}
+"""
+                )
             }
 
             sh """
@@ -83,23 +90,4 @@ pipeline {
             """
         }
     }
-}
-
-def notifySlack(status) {
-    def colorMap = [
-        'SUCCESS': 'good',
-        'FAILURE': 'danger',
-        'UNSTABLE': 'warning'
-    ]
-
-    slackSend(
-        channel: SLACK_CHANNEL,
-        color: colorMap.get(status, 'danger'),
-        message: """
-            *CI Result:* ${status}
-            *Job:* ${env.JOB_NAME}
-            *Build:* #${env.BUILD_NUMBER}
-            *URL:* ${env.BUILD_URL}
-            """
-    )
 }
