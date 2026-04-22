@@ -16,9 +16,12 @@ pipeline {
 
         stage('🔍 SonarQube Analysis') {
             steps {
-            withSonarQubeEnv('SonarQube') {
+        withSonarQubeEnv('SonarQube') {
             sh '''
-                sonar-scanner \
+                docker run --rm \
+                --network=ci_for_django_health_main_default \
+                -v "$PWD:/usr/src" \
+                sonarsource/sonar-scanner-cli \
                 -Dsonar.projectKey=django_health_app \
                 -Dsonar.sources=. \
                 -Dsonar.host.url=http://sonarqube:9000 \
