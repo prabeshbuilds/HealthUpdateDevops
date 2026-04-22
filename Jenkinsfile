@@ -14,25 +14,24 @@ pipeline {
             }
         }
 
-       stage('🔍 SonarQube Analysis') {
-             steps {
-        withSonarQubeEnv("${SONARQUBE_SERVER}") {
-            sh '''
-                echo "Waiting for SonarQube..."
-                sleep 20
+        stage('🔍 SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv("${SONARQUBE_SERVER}") {
+                    sh '''
+                        echo "Waiting for SonarQube..."
+                        sleep 30
 
-                docker run --rm \
-                --network=ci_for_django_health_main_default \
-                -e SONAR_HOST_URL=http://sonarqube:9000 \
-                -e SONAR_TOKEN=sqa_a64f8371466d836d25f0288a6873b63b0406d15b \
-                -v "$PWD:/usr/src" \
-                sonarsource/sonar-scanner-cli \
-                -Dsonar.projectKey=django_health_app \
-                -Dsonar.sources=. \
-                -Dsonar.projectBaseDir=/usr/src
-            '''
+                        docker run --rm \
+                        --network=ci_for_django_health_main_default \
+                        -e SONAR_HOST_URL=http://sonarqube:9000 \
+                        -e SONAR_LOGIN=YOUR_TOKEN \
+                        -v "$PWD:/usr/src" \
+                        sonarsource/sonar-scanner-cli \
+                        -Dsonar.projectKey=django_health_app \
+                        -Dsonar.sources=.
+                    '''
                 }
-             }
+            }
         }
 
         stage('⏳ Quality Gate') {
