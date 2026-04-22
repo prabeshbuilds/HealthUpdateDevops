@@ -30,8 +30,6 @@ pipeline {
                     venv/bin/python -m pip install --upgrade pip
                     venv/bin/pip install -r requirements.txt
 
-                    # Dev tools
-                    venv/bin/pip install flake8 pytest pytest-django coverage
                 '''
             }
         }
