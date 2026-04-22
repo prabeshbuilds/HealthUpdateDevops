@@ -2,70 +2,75 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "HealthUpdateApp"
+        IMAGE_NAME = "health-update-app"
+        VENV = "venv"
+    }
+
+    options {
+        timestamps()
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        disableConcurrentBuilds()
+        timeout(time: 20, unit: 'MINUTES')
     }
 
     stages {
 
         stage('📥 Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
+                git branch: 'main',
+                    url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
             }
         }
 
-        stage('🐍 Setup Python') {
+        stage('🐍 Setup Python Environment') {
             steps {
                 sh '''
                     python3 -m venv venv
-                    . venv/bin/activate
-                    pip install --upgrade pip
-                    pip install -r requirements.txt
+
+                    venv/bin/python -m pip install --upgrade pip
+                    venv/bin/pip install -r requirements.txt
 
                     # Dev tools
-                    pip install flake8 pytest pytest-django coverage
+                    venv/bin/pip install flake8 pytest pytest-django coverage
                 '''
             }
         }
 
-        // ✅ CODE QUALITY (Lint)
-        stage('🔍 Code Quality - Lint') {
+        stage('🔍 Code Quality (Lint)') {
             steps {
                 sh '''
-                    . venv/bin/activate
                     echo "Running flake8..."
-                    flake8 . --max-line-length=120
+                    venv/bin/flake8 . --max-line-length=120
                 '''
             }
         }
 
-        // ✅ TEST + COVERAGE (IMPORTANT for Sonar)
-        stage('🧪 Tests with Coverage') {
+        stage('🧪 Tests + Coverage') {
             steps {
                 sh '''
-                    . venv/bin/activate
-                    coverage run manage.py test
-                    coverage xml
+                    venv/bin/python manage.py test
+                    venv/bin/coverage run manage.py test
+                    venv/bin/coverage xml
                 '''
             }
         }
 
-        // ✅ SONARQUBE ANALYSIS (Correct way)
         stage('📊 SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
                         sonar-scanner \
-                          -Dsonar.projectKey=todo-django \
-                          -Dsonar.projectName=todo-django \
+                          -Dsonar.projectKey=health-update-app \
+                          -Dsonar.projectName=Health Update App \
                           -Dsonar.sources=. \
+                          -Dsonar.language=py \
                           -Dsonar.python.coverage.reportPaths=coverage.xml \
-                          -Dsonar.exclusions=venv/**,migrations/**,static/**
+                          -Dsonar.exclusions=venv/**,**/migrations/**,**/__pycache__/**
                     '''
                 }
             }
         }
 
-        // ✅ QUALITY GATE
         stage('🚦 Quality Gate') {
             steps {
                 timeout(time: 5, unit: 'MINUTES') {
@@ -77,31 +82,44 @@ pipeline {
         stage('🐳 Build Docker Image') {
             steps {
                 sh '''
+                    echo "Building Docker image..."
                     docker build -t ${IMAGE_NAME}:latest .
+                    docker images | grep ${IMAGE_NAME}
                 '''
             }
         }
     }
 
     post {
+
         success {
-            echo '''
-✅ CI SUCCESS
+            echo """
+==============================
+✅ CI PIPELINE SUCCESS
+==============================
+✔ Code Checkout OK
 ✔ Lint Passed
 ✔ Tests Passed
-✔ Quality Gate Passed
-✔ Docker Build Passed
-'''
+✔ Sonar Quality Gate Passed
+✔ Docker Build Successful
+==============================
+"""
         }
+
         failure {
-            echo '''
-❌ CI FAILED
+            echo """
+==============================
+❌ CI PIPELINE FAILED
+==============================
 Check:
 - Lint errors
 - Test failures
-- Sonar Quality Gate
-'''
+- SonarQube Quality Gate
+- Docker build logs
+==============================
+"""
         }
+
         always {
             cleanWs()
         }
