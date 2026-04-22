@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "django_health_app"
-        SONARQUBE_SERVER = "SonarQube"   // Jenkins configured name
+        SONARQUBE_SERVER = "SonarQube"
     }
 
     stages {
@@ -16,17 +16,15 @@ pipeline {
 
         stage('🔍 SonarQube Analysis') {
             steps {
-        withSonarQubeEnv('SonarQube') {
-            sh '''
-                docker run --rm \
-                --network=ci_for_django_health_main_default \
-                -v "$PWD:/usr/src" \
-                sonarsource/sonar-scanner-cli \
-                -Dsonar.projectKey=django_health_app \
-                -Dsonar.sources=. \
-                -Dsonar.host.url=http://sonarqube:9000 \
-                -Dsonar.login=sqa_xxxxxxxxxxxxx
-            '''
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        docker run --rm \
+                        -v "$PWD:/usr/src" \
+                        sonarsource/sonar-scanner-cli \
+                        -Dsonar.projectKey=django_health_app \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=http://sonarqube:9000
+                    '''
                 }
             }
         }
@@ -50,24 +48,20 @@ pipeline {
 
         stage('🏗️ Build Docker Image') {
             steps {
-                sh '''
-                    docker build -t $IMAGE_NAME .
-                '''
+                sh "docker build -t $IMAGE_NAME ."
             }
         }
 
         stage('🚀 Run Containers') {
             steps {
-                sh '''
-                    docker compose up -d --build --force-recreate
-                '''
+                sh "docker compose up -d --build --force-recreate"
             }
         }
 
         stage('🧪 Health Check') {
             steps {
                 sh '''
-                    sleep 5
+                    sleep 10
                     docker ps
                     curl -f http://localhost:8021 || true
                 '''
