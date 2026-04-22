@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "django_health_app"
+        SONARQUBE_SERVER = "SonarQube"   // Jenkins configured name
     }
 
     stages {
@@ -10,6 +11,28 @@ pipeline {
         stage('📥 Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
+            }
+        }
+
+        stage('🔍 SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv("${SONARQUBE_SERVER}") {
+                    sh '''
+                        sonar-scanner \
+                        -Dsonar.projectKey=django_health_app \
+                        -Dsonar.projectName=django_health_app \
+                        -Dsonar.sources=. \
+                        -Dsonar.python.version=3.11
+                    '''
+                }
+            }
+        }
+
+        stage('⏳ Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 
