@@ -2,9 +2,10 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "django_health_app"
-        SONARQUBE_SERVER = "SonarQube"
-        SLACK_CHANNEL = "#jenkins-alerts"
+        APP_NAME        = "django_health_app"
+        SONAR_SERVER    = "SonarQube"
+        SLACK_CHANNEL   = "#jenkins-alerts"
+        APP_URL         = "http://localhost:8021"
     }
 
     options {
@@ -14,29 +15,30 @@ pipeline {
 
     stages {
 
-        stage('📥 Checkout') {
+        stage('Checkout') {
             steps {
-                git branch: 'main', url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
+                git branch: 'main',
+                    url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
             }
         }
 
-        stage('🔍 Code Analysis (SonarQube)') {
+        stage('SonarQube Analysis') {
             steps {
-                withSonarQubeEnv("${SONARQUBE_SERVER}") {
-                    sh '''
+                withSonarQubeEnv(SONAR_SERVER) {
+                    sh """
                     docker run --rm \
                       --network sonarqube_default \
                       -v ${WORKSPACE}:/usr/src \
                       sonarsource/sonar-scanner-cli \
-                      -Dsonar.projectKey=django_health_app \
+                      -Dsonar.projectKey=${APP_NAME} \
                       -Dsonar.sources=. \
                       -Dsonar.host.url=http://sonarqube:9000
-                    '''
+                    """
                 }
             }
         }
 
-        stage('⏳ Quality Gate') {
+        stage('Quality Gate') {
             steps {
                 timeout(time: 2, unit: 'MINUTES') {
                     waitForQualityGate abortPipeline: true
@@ -44,27 +46,27 @@ pipeline {
             }
         }
 
-        stage('🐳 Build Image') {
+        stage('Build Image') {
             steps {
-                sh 'docker build -t $IMAGE_NAME .'
+                sh "docker build -t ${APP_NAME} ."
             }
         }
 
-        stage('🚀 Deploy (Docker Compose)') {
+        stage('Deploy') {
             steps {
-                sh '''
+                sh """
                 docker compose down --remove-orphans || true
                 docker compose up -d --build --force-recreate
-                '''
+                """
             }
         }
 
-        stage('🧪 Health Check') {
+        stage('Health Check') {
             steps {
-                sh '''
+                sh """
                 sleep 10
-                curl -f http://localhost:8021
-                '''
+                curl -f ${APP_URL}
+                """
             }
         }
     }
@@ -72,26 +74,32 @@ pipeline {
     post {
         always {
             script {
-                def status = currentBuild.currentResult
-                def color = (status == 'SUCCESS') ? 'good' : 'danger'
-
-                slackSend(
-                    channel: SLACK_CHANNEL,
-                    color: color,
-                    message: """
-*CI Pipeline Result*
-*Job:* ${env.JOB_NAME}
-*Build:* #${env.BUILD_NUMBER}
-*Status:* ${status}
-*URL:* ${env.BUILD_URL}
-"""
-                )
+                notifySlack(currentBuild.currentResult)
             }
 
-            sh '''
+            sh """
             docker ps -a
             docker images
-            '''
+            """
         }
     }
+}
+
+def notifySlack(status) {
+    def colorMap = [
+        'SUCCESS': 'good',
+        'FAILURE': 'danger',
+        'UNSTABLE': 'warning'
+    ]
+
+    slackSend(
+        channel: SLACK_CHANNEL,
+        color: colorMap.get(status, 'danger'),
+        message: """
+            *CI Result:* ${status}
+            *Job:* ${env.JOB_NAME}
+            *Build:* #${env.BUILD_NUMBER}
+            *URL:* ${env.BUILD_URL}
+            """
+    )
 }
