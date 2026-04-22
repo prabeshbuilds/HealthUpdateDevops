@@ -18,11 +18,13 @@ pipeline {
             steps {
                 withSonarQubeEnv("${SONARQUBE_SERVER}") {
                     sh '''
-                        sonar-scanner \
+                        docker run --rm \
+                        -e SONAR_HOST_URL=http://localhost:9000 \
+                        -e SONAR_LOGIN=YOUR_TOKEN \
+                        -v "$PWD:/usr/src" \
+                        sonarsource/sonar-scanner-cli \
                         -Dsonar.projectKey=django_health_app \
-                        -Dsonar.projectName=django_health_app \
-                        -Dsonar.sources=. \
-                        -Dsonar.python.version=3.11
+                        -Dsonar.sources=.
                     '''
                 }
             }
