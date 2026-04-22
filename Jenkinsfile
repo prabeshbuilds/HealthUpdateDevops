@@ -3,6 +3,7 @@ pipeline {
 
     environment {
         IMAGE_NAME = "health-update-project-web"
+        DOCKERHUB_USER = "your_dockerhub_username"   // 🔁 Replace this
     }
 
     stages {
@@ -16,17 +17,15 @@ pipeline {
 
         stage('Create Virtual Environment') {
             steps {
-            sh '''
-            rm -rf venv
-            python3 -m venv venv
-
-            chmod -R 755 venv
-
-            . venv/bin/activate
-            python -m pip install --upgrade pip
-            python -m pip install -r requirements.txt
-        '''
-        }
+                sh '''
+                    rm -rf venv
+                    python3 -m venv venv
+                    chmod -R 755 venv
+                    . venv/bin/activate
+                    python -m pip install --upgrade pip
+                    python -m pip install -r requirements.txt
+                '''
+            }
         }
 
         stage('Run Lint') {
@@ -45,16 +44,15 @@ pipeline {
                 '''
             }
         }
+
         stage('Docker Login') {
             steps {
                 withCredentials([usernamePassword(
-                    credentialsId: 'docker-hub-cred',
-                    usernameVariable: 'USER',
-                    passwordVariable: 'PASS'
+                    credentialsId: 'dockerhub-credentials',
+                    usernameVariable: 'DOCKER_USER',
+                    passwordVariable: 'DOCKER_PASS'
                 )]) {
-                    sh '''
-                        echo $PASS | docker login -u $USER --password-stdin
-                    '''
+                    sh 'echo $DOCKER_PASS | docker login -u $DOCKER_USER --password-stdin'
                 }
             }
         }
@@ -66,6 +64,7 @@ pipeline {
                 '''
             }
         }
+
     }
 
     post {
@@ -76,6 +75,7 @@ pipeline {
             echo '❌ CI Pipeline Failed'
         }
         always {
+            sh 'docker logout || true'
             cleanWs()
         }
     }
