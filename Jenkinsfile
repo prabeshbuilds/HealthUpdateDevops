@@ -2,55 +2,49 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "healthupdate"
+        IMAGE_NAME = "healthupdate-django-ci"
     }
 
     stages {
 
-        stage('📥 Checkout Code') {
+        stage('Checkout Code') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
+                git branch: 'main', url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
             }
         }
 
-        stage('🐍 Setup Python Virtualenv') {
+       stage('Setup Python Virtualenv') {
+    steps {
+        sh '''
+            python3 -m venv venv
+            venv/bin/python -m pip install --upgrade pip
+            venv/bin/python -m pip install -r requirements.txt
+        '''
+    }
+}
+
+        stage('Run Lint') {
             steps {
                 sh '''
-                    python3 -m venv venv
-
-                    venv/bin/python -m pip install --upgrade pip
-                    venv/bin/python -m pip install -r requirements.txt
-
-                    # Dev tools
-                    venv/bin/python -m pip install flake8
+                  . venv/bin/activate
+                
                 '''
             }
         }
 
-        stage('🔍 Run Lint') {
+        stage('Run Django Tests') {
             steps {
                 sh '''
-                    venv/bin/python -m flake8 . \
-                        --max-line-length=120 \
-                        --exclude=venv,migrations,__pycache__,.git
+                  . venv/bin/activate
+                  python manage.py test
                 '''
             }
         }
 
-        stage('🧪 Run Django Tests') {
+        stage('Build Docker Image') {
             steps {
                 sh '''
-                    venv/bin/python manage.py test
-                '''
-            }
-        }
-
-        stage('🐳 Build Docker Image') {
-            steps {
-                sh '''
-                    docker pull python:3.11-slim || true
-                    docker build -t ${IMAGE_NAME}:latest .
+                  docker build -t ${IMAGE_NAME}:latest .
                 '''
             }
         }
@@ -58,32 +52,11 @@ pipeline {
 
     post {
         success {
-            echo """
-=========================
-✅ CI PIPELINE SUCCESS
-=========================
-✔ Checkout
-✔ Python Setup
-✔ Lint Passed
-✔ Tests Passed
-✔ Docker Build Passed
-=========================
-"""
+            echo '✅ CI Pipeline Succeeded'
         }
-
         failure {
-            echo """
-=========================
-❌ CI PIPELINE FAILED
-=========================
-Check:
-- Lint errors
-- Test failures
-- Docker build issues
-=========================
-"""
+            echo '❌ CI Pipeline Failed'
         }
-
         always {
             cleanWs()
         }
