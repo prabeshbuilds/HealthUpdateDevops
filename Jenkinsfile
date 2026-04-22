@@ -18,11 +18,9 @@ pipeline {
         stage('Create Clean Virtual Environment') {
             steps {
                 sh '''
-                    rm -rf venv
-                    python3 -m venv venv
-                    chmod -R 755 venv
-                    venv/bin/python -m pip install --upgrade pip
-                    venv/bin/pip install -r requirements.txt
+                    python3 -m venv
+                    source venv/bin/activate
+                    pip install -r requirements.txt
                 '''
             }
         }
@@ -30,8 +28,9 @@ pipeline {
         stage('Run Lint') {
             steps {
                 sh '''
-                    venv/bin/pip install flake8
-                    venv/bin/flake8 . || true
+                    source venv/bin/activate
+                    pip install flake8
+                    flake8 . || true
                 '''
             }
         }
@@ -39,7 +38,8 @@ pipeline {
         stage('Run Django Tests') {
             steps {
                 sh '''
-                    venv/bin/python manage.py test
+                    source venv/bin/activate
+                    python manage.py test
                 '''
             }
         }
