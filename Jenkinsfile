@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "healthupdat"
+        IMAGE_NAME = "health_update_project-web:latest"
         VENV = "venv"
     }
 
