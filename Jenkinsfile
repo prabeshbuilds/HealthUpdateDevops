@@ -2,8 +2,7 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "health_update_project-web:latest"
-        VENV = "venv"
+        IMAGE_NAME = "health-update-project-web"
     }
 
     stages {
@@ -15,12 +14,12 @@ pipeline {
             }
         }
 
-        stage('Create Clean Virtual Environment') {
+        stage('Create Virtual Environment') {
             steps {
                 sh '''
-                    python3 -m venv
-                    source venv/bin/activate
-                    pip install -r requirements.txt
+                    python3 -m venv venv
+                    venv/bin/pip install --upgrade pip
+                    venv/bin/pip install -r requirements.txt
                 '''
             }
         }
@@ -28,9 +27,8 @@ pipeline {
         stage('Run Lint') {
             steps {
                 sh '''
-                    source venv/bin/activate
-                    pip install flake8
-                    flake8 . || true
+                    venv/bin/pip install flake8
+                    venv/bin/flake8 . || true
                 '''
             }
         }
@@ -38,8 +36,7 @@ pipeline {
         stage('Run Django Tests') {
             steps {
                 sh '''
-                    source venv/bin/activate
-                    python manage.py test
+                    venv/bin/python manage.py test
                 '''
             }
         }
@@ -51,7 +48,6 @@ pipeline {
                 '''
             }
         }
-
     }
 
     post {
