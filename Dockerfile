@@ -1,6 +1,5 @@
 # Use official Python image
-FROM python:3.11-slim
-
+FROM python:3.14.4-slim
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
