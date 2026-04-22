@@ -16,11 +16,16 @@ pipeline {
 
         stage('Create Virtual Environment') {
             steps {
-                sh '''
-                    python3 -m venv venv
-                    venv/bin/pip install --upgrade pip
-                    venv/bin/pip install -r requirements.txt
-                '''
+            sh '''
+            rm -rf venv
+            python3 -m venv venv
+
+            chmod -R 755 venv
+
+            . venv/bin/activate
+            python -m pip install --upgrade pip
+            python -m pip install -r requirements.txt
+        '''
             }
         }
 
