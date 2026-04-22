@@ -78,7 +78,7 @@ pipeline {
             '''
 
             slackSend (
-                channel: 'test',
+                channel: 'alert',
                 color: '#439FE0',
                 message: "ℹ️ Jenkins job finished: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
             )
