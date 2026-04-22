@@ -17,14 +17,15 @@ pipeline {
         stage('🔍 SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
-                    sh '''
-                        docker run --rm \
-                        -v "$PWD:/usr/src" \
-                        sonarsource/sonar-scanner-cli \
-                        -Dsonar.projectKey=django_health_app \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=http://172.25.0.2:9000
-                    '''
+                 sh '''
+                docker run --rm \
+                    --network sonarqube_default \
+                    -v ${WORKSPACE}:/usr/src \
+                    sonarsource/sonar-scanner-cli \
+                    -Dsonar.projectKey=django_health_app \
+                    -Dsonar.sources=. \
+                    -Dsonar.host.url=http://sonarqube:9000
+                '''
                 }
             }
         }
