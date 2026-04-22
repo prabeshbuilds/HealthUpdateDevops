@@ -19,7 +19,8 @@ pipeline {
                 withSonarQubeEnv("${SONARQUBE_SERVER}") {
                     sh '''
                         docker run --rm \
-                        -e SONAR_HOST_URL=http://sonarqube:9000
+                        --network=ci_for_django_health_main_default \
+                        -e SONAR_HOST_URL=http://sonarqube:9000 \
                         -e SONAR_LOGIN=YOUR_TOKEN \
                         -v "$PWD:/usr/src" \
                         sonarsource/sonar-scanner-cli \
