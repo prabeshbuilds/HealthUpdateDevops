@@ -63,6 +63,10 @@ pipeline {
                 docker images
                 docker ps -a
             '''
+            slackSend (
+                channel: 'test',
+                color: '#439FE0',
+                message: "ℹ️ Jenkins job finished: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
         }
     }
 }
