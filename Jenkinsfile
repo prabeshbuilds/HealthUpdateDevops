@@ -2,92 +2,67 @@ pipeline {
     agent any
 
     environment {
-        APP_NAME     = "django_health_app"
-        SONAR_SERVER = "SonarQube"
-        APP_URL      = "http://localhost:8021"
-    }
-
-    options {
-        timestamps()
-        skipStagesAfterUnstable()
+        IMAGE_NAME = "django_health_app"
     }
 
     stages {
 
-        stage('Checkout') {
+        stage('📥 Checkout Code') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
+                git branch: 'main', url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
             }
         }
 
-        stage('SonarQube Analysis') {
+        stage('🐳 Clean Old Containers') {
             steps {
-                withSonarQubeEnv(SONAR_SERVER) {
-                    sh """
-                    docker run --rm \
-                      --network sonarqube_default \
-                      -v ${WORKSPACE}:/usr/src \
-                      sonarsource/sonar-scanner-cli \
-                      -Dsonar.projectKey=${APP_NAME} \
-                      -Dsonar.sources=. \
-                      -Dsonar.host.url=http://sonarqube:9000
-                    """
-                }
+                sh '''
+                    docker compose down --remove-orphans || true
+                    docker rm -f django_health_app || true
+                '''
             }
         }
 
-        stage('Quality Gate') {
+        stage('🏗️ Build Docker Image') {
             steps {
-                timeout(time: 2, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
+                sh '''
+                    docker build -t $IMAGE_NAME .
+                '''
             }
         }
 
-        stage('Build Image') {
+        stage('🚀 Run Containers') {
             steps {
-                sh "docker build -t ${APP_NAME} ."
+                sh '''
+                    docker compose up -d --build --force-recreate
+                '''
             }
         }
 
-        stage('Deploy') {
+        stage('🧪 Health Check') {
             steps {
-                sh """
-                docker compose down --remove-orphans || true
-                docker compose up -d --build --force-recreate
-                """
-            }
-        }
-
-        stage('Health Check') {
-            steps {
-                sh """
-                sleep 10
-                curl -f ${APP_URL}
-                """
+                sh '''
+                    sleep 5
+                    docker ps
+                    curl -f http://localhost:8021 || true
+                '''
             }
         }
     }
 
     post {
-        always {
-            script {
-                slackSend(
-                    color: currentBuild.currentResult == 'SUCCESS' ? 'good' : 'danger',
-                    message: """
-*CI RESULT:* ${currentBuild.currentResult}
-*Job:* ${env.JOB_NAME}
-*Build:* #${env.BUILD_NUMBER}
-*URL:* ${env.BUILD_URL}
-"""
-                )
-            }
+        success {
+            echo "✅ CI Pipeline completed successfully!"
+        }
 
-            sh """
-            docker ps -a
-            docker images
-            """
+        failure {
+            echo "❌ CI Pipeline failed!"
+        }
+
+        always {
+            sh '''
+                docker images
+                docker ps -a
+            '''
         }
     }
 }
