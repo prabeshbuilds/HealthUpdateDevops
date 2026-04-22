@@ -2,7 +2,8 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "healthupdate-django-ci"
+        IMAGE_NAME = "healthupdat"
+        VENV = "venv"
     }
 
     stages {
@@ -13,21 +14,21 @@ pipeline {
             }
         }
 
-       stage('Setup Python Virtualenv') {
-    steps {
-        sh '''
-            python3 -m venv venv
-            venv/bin/python -m pip install --upgrade pip
-            venv/bin/python -m pip install -r requirements.txt
-        '''
-    }
-}
-
-        stage('Run Lint') {
+        stage('Create Virtual Environment & Install Dependencies') {
             steps {
                 sh '''
-                  . venv/bin/activate
-                
+                    python3 -m venv $VENV
+                    $VENV/bin/pip install --upgrade pip
+                    $VENV/bin/pip install -r requirements.txt
+                '''
+            }
+        }
+
+        stage('Run Lint (flake8)') {
+            steps {
+                sh '''
+                    $VENV/bin/pip install flake8
+                    $VENV/bin/flake8 . || true
                 '''
             }
         }
@@ -35,16 +36,23 @@ pipeline {
         stage('Run Django Tests') {
             steps {
                 sh '''
-                  . venv/bin/activate
-                  python manage.py test
+                    $VENV/bin/python manage.py test
                 '''
             }
         }
 
-            stage('Build Docker Image') {
+        stage('Build Docker Image') {
             steps {
                 sh '''
-                  docker build -t ${IMAGE_NAME}:latest .
+                    docker build -t $IMAGE_NAME:latest .
+                '''
+            }
+        }
+
+        stage('Run Docker Container (Optional Test)') {
+            steps {
+                sh '''
+                    docker run -d --name healthapp_test -p 8000:8000 $IMAGE_NAME:latest || true
                 '''
             }
         }
@@ -58,6 +66,9 @@ pipeline {
             echo '❌ CI Pipeline Failed'
         }
         always {
+            sh '''
+                docker rm -f healthapp_test || true
+            '''
             cleanWs()
         }
     }
