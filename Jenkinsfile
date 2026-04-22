@@ -23,7 +23,7 @@ pipeline {
                         sonarsource/sonar-scanner-cli \
                         -Dsonar.projectKey=django_health_app \
                         -Dsonar.sources=. \
-                        -Dsonar.host.url=http://sonarqube:9000
+                        -Dsonar.host.url=http://localhost:9000
                     '''
                 }
             }
