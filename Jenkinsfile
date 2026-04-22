@@ -18,6 +18,9 @@ pipeline {
             steps {
                 withSonarQubeEnv("${SONARQUBE_SERVER}") {
                     sh '''
+                        echo "Waiting for SonarQube..."
+                        sleep 30
+
                         docker run --rm \
                         --network=ci_for_django_health_main_default \
                         -e SONAR_HOST_URL=http://sonarqube:9000 \
