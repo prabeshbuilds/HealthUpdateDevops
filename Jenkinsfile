@@ -7,44 +7,50 @@ pipeline {
 
     stages {
 
-        stage('Checkout Code') {
+        stage('📥 Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
+                git branch: 'main',
+                    url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
             }
         }
 
-       stage('Setup Python Virtualenv') {
-    steps {
-        sh '''
-            python3 -m venv venv
-            venv/bin/python -m pip install --upgrade pip
-            venv/bin/python -m pip install -r requirements.txt
-        '''
-    }
-}
-
-        stage('Run Lint') {
+        stage('🐍 Setup Python Virtualenv') {
             steps {
                 sh '''
-                  . venv/bin/activate
-                
+                    python3 -m venv venv
+
+                    venv/bin/python -m pip install --upgrade pip
+                    venv/bin/python -m pip install -r requirements.txt
+
+                    # Dev tools
+                    venv/bin/python -m pip install flake8
                 '''
             }
         }
 
-        stage('Run Django Tests') {
+        stage('🔍 Run Lint') {
             steps {
                 sh '''
-                  . venv/bin/activate
-                  python manage.py test
+                    venv/bin/python -m flake8 . \
+                        --max-line-length=120 \
+                        --exclude=venv,migrations,__pycache__,.git
                 '''
             }
         }
 
-        stage('Build Docker Image') {
+        stage('🧪 Run Django Tests') {
             steps {
                 sh '''
-                  docker build -t ${IMAGE_NAME}:latest .
+                    venv/bin/python manage.py test
+                '''
+            }
+        }
+
+        stage('🐳 Build Docker Image') {
+            steps {
+                sh '''
+                    docker pull python:3.11-slim || true
+                    docker build -t ${IMAGE_NAME}:latest .
                 '''
             }
         }
@@ -52,11 +58,32 @@ pipeline {
 
     post {
         success {
-            echo '✅ CI Pipeline Succeeded'
+            echo """
+=========================
+✅ CI PIPELINE SUCCESS
+=========================
+✔ Checkout
+✔ Python Setup
+✔ Lint Passed
+✔ Tests Passed
+✔ Docker Build Passed
+=========================
+"""
         }
+
         failure {
-            echo '❌ CI Pipeline Failed'
+            echo """
+=========================
+❌ CI PIPELINE FAILED
+=========================
+Check:
+- Lint errors
+- Test failures
+- Docker build issues
+=========================
+"""
         }
+
         always {
             cleanWs()
         }
