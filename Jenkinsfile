@@ -3,7 +3,6 @@ pipeline {
 
     environment {
         IMAGE_NAME = "django_health_app"
-        CONTAINER_NAME = "django_health_app"
     }
 
     stages {
@@ -14,10 +13,11 @@ pipeline {
             }
         }
 
-        stage('🐳 Stop Old Containers') {
+        stage('🐳 Clean Old Containers') {
             steps {
                 sh '''
-                    docker compose down || true
+                    docker compose down --remove-orphans || true
+                    docker rm -f django_health_app || true
                 '''
             }
         }
@@ -30,14 +30,23 @@ pipeline {
             }
         }
 
-        stage('🚀 Run Docker Compose') {
+        stage('🚀 Run Containers') {
             steps {
                 sh '''
-                    docker compose up -d --build
+                    docker compose up -d --build --force-recreate
                 '''
             }
         }
 
+        stage('🧪 Health Check') {
+            steps {
+                sh '''
+                    sleep 5
+                    docker ps
+                    curl -f http://localhost:8021 || true
+                '''
+            }
+        }
     }
 
     post {
@@ -52,7 +61,7 @@ pipeline {
         always {
             sh '''
                 docker images
-                docker ps
+                docker ps -a
             '''
         }
     }
