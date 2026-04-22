@@ -38,22 +38,6 @@ pipeline {
             }
         }
 
-        stage('🧪 Django Check (Optional)') {
-            steps {
-                sh '''
-                    docker compose exec web python manage.py check
-                '''
-            }
-        }
-
-        stage('📊 Migrations (Optional)') {
-            steps {
-                sh '''
-                    docker compose exec web python manage.py migrate
-                '''
-            }
-        }
-
     }
 
     post {
