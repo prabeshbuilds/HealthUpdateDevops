@@ -50,12 +50,25 @@ pipeline {
     }
 
     post {
+
         success {
             echo "✅ CI Pipeline completed successfully!"
+
+            slackSend (
+                channel: 'test',
+                color: 'good',
+                message: "✅ SUCCESS: Django Health App deployed successfully.\nJob: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+            )
         }
 
         failure {
             echo "❌ CI Pipeline failed!"
+
+            slackSend (
+                channel: 'test',
+                color: 'danger',
+                message: "❌ FAILED: Django Health App pipeline failed.\nJob: ${env.JOB_NAME} #${env.BUILD_NUMBER}\nCheck Jenkins logs."
+            )
         }
 
         always {
@@ -63,12 +76,12 @@ pipeline {
                 docker images
                 docker ps -a
             '''
+
             slackSend (
                 channel: 'test',
                 color: '#439FE0',
                 message: "ℹ️ Jenkins job finished: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
             )
-            
         }
     }
 }
