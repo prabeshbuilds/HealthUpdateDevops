@@ -23,17 +23,3 @@ pipeline {
         }
     }
 }
-
-    post {
-        success {
-            echo '✅ CI Pipeline Succeeded'
-        }
-        failure {
-            echo '❌ CI Pipeline Failed'
-        }
-        always {
-            sh 'docker logout || true'
-            cleanWs()
-        }
-    }
-}
