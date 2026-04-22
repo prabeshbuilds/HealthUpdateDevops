@@ -13,6 +13,7 @@ pipeline {
     }
 
     stages {
+
         stage('📥 Checkout Code') {
             steps {
                 git branch: 'main',
@@ -24,24 +25,37 @@ pipeline {
             steps {
                 sh '''
                     python3 -m venv venv
-                    venv/bin/pip install --upgrade pip
-                    venv/bin/pip install -r requirements.txt
-                    venv/bin/pip install flake8 coverage
+                    . venv/bin/activate
+
+                    pip install --upgrade pip
+                    pip install -r requirements.txt
+                    pip install flake8 coverage
                 '''
             }
         }
 
-        stage('🔍 Code Quality (Lint)') {
+        stage('🔍 Lint Code') {
             steps {
-                sh 'venv/bin/flake8 . --max-line-length=120 --exclude=venv,migrations,__pycache__'
+                sh '''
+                    . venv/bin/activate
+
+                    flake8 . \
+                        --max-line-length=120 \
+                        --exclude=venv,migrations,__pycache__,.git
+                '''
             }
         }
 
-        stage('🧪 Tests + Coverage') {
+        stage('🧪 Run Tests & Coverage') {
             steps {
                 sh '''
-                    venv/bin/coverage run manage.py test
-                    venv/bin/coverage xml
+                    . venv/bin/activate
+
+                    coverage run manage.py test
+                    coverage report
+                    coverage xml -o coverage.xml
+
+                    ls -la coverage.xml
                 '''
             }
         }
@@ -52,9 +66,8 @@ pipeline {
                     sh '''
                         sonar-scanner \
                             -Dsonar.projectKey=health-update-app \
-                            "-Dsonar.projectName=Health Update App" \
+                            -Dsonar.projectName="Health Update App" \
                             -Dsonar.sources=. \
-                            -Dsonar.language=py \
                             -Dsonar.python.coverage.reportPaths=coverage.xml \
                             -Dsonar.exclusions=venv/**,**/migrations/**,**/__pycache__/**
                     '''
@@ -70,10 +83,12 @@ pipeline {
             }
         }
 
-        stage('🐳 Build Docker Image') {
+        stage('🐳 Docker Build') {
             steps {
                 sh '''
                     docker build -t ${IMAGE_NAME}:latest .
+
+                    echo "Docker Images:"
                     docker images | grep ${IMAGE_NAME}
                 '''
             }
@@ -82,31 +97,36 @@ pipeline {
 
     post {
         success {
-            echo '''
+            echo """
 ==============================
-✅ CI PIPELINE SUCCESS
+✅ PIPELINE SUCCESS
 ==============================
-✔ Code Checkout OK
+✔ Checkout
+✔ Python Setup
 ✔ Lint Passed
 ✔ Tests Passed
-✔ Sonar Quality Gate Passed
-✔ Docker Build Successful
+✔ Coverage Generated
+✔ SonarQube Passed
+✔ Quality Gate Passed
+✔ Docker Build Success
 ==============================
-'''
+"""
         }
+
         failure {
-            echo '''
+            echo """
 ==============================
-❌ CI PIPELINE FAILED
+❌ PIPELINE FAILED
 ==============================
-Check:
+Check logs for:
 - Lint errors
 - Test failures
-- SonarQube Quality Gate
-- Docker build logs
+- SonarQube issues
+- Docker build errors
 ==============================
-'''
+"""
         }
+
         always {
             cleanWs()
         }
