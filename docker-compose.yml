@@ -5,7 +5,7 @@ services:
     build: .
     container_name: django_health_app
     ports:
-      - "8001:8000"
+      - "8021:8000"
     volumes:
       - .:/app
     command: gunicorn config.wsgi:application --bind 0.0.0.0:8000
