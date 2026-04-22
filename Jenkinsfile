@@ -2,14 +2,14 @@ pipeline {
     agent any
 
     environment {
-        IMAGE_NAME = "todo-django-ci"
+        IMAGE_NAME = "healthupdate"
     }
 
     stages {
 
         stage('Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/prabeshbuilds/todo.git'
+                git branch: 'main', url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
             }
         }
 
