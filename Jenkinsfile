@@ -58,10 +58,12 @@ pipeline {
         stage('🚀 Run Container') {
             steps {
                 sh '''
+                    docker rm -f $CONTAINER_NAME || true
+
                     docker run -d \
-                      --name $CONTAINER_NAME \
-                      -p 8021:8000 \
-                      $IMAGE_NAME
+                    --name $CONTAINER_NAME \
+                    -p 8021:8000 \
+                    $IMAGE_NAME
                 '''
             }
         }
