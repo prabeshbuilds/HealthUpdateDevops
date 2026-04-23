@@ -7,31 +7,33 @@ pipeline {
 
     environment {
         IMAGE_NAME = "django_health_app"
+        CONTAINER_NAME = "django_health_app"
     }
 
     stages {
 
         stage('📥 Checkout Code') {
             steps {
-                git branch: 'main', url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
+                git branch: 'main',
+                    url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
             }
         }
 
-        // 🔍 SonarQube Analysis
         stage('🔍 SonarQube Analysis') {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
                         sonar-scanner \
                           -Dsonar.projectKey=django-health-app \
+                          -Dsonar.projectName=django-health-app \
                           -Dsonar.sources=. \
-                          -Dsonar.host.url=$SONAR_HOST_URL
+                          -Dsonar.host.url=$SONAR_HOST_URL \
+                          -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
                 }
             }
         }
 
-        // 🚦 Quality Gate (WAIT FOR WEBHOOK)
         stage('🚦 Quality Gate') {
             steps {
                 timeout(time: 2, unit: 'MINUTES') {
@@ -40,11 +42,11 @@ pipeline {
             }
         }
 
-        stage('🐳 Clean Old Containers') {
+        stage('🐳 Stop Old Containers') {
             steps {
                 sh '''
-                    docker compose down --remove-orphans || true
-                    docker rm -f django_health_app || true
+                    docker stop $CONTAINER_NAME || true
+                    docker rm $CONTAINER_NAME || true
                 '''
             }
         }
@@ -57,10 +59,13 @@ pipeline {
             }
         }
 
-        stage('🚀 Run Containers') {
+        stage('🚀 Run Container') {
             steps {
                 sh '''
-                    docker compose up -d --build --force-recreate
+                    docker run -d \
+                      --name $CONTAINER_NAME \
+                      -p 8021:8000 \
+                      $IMAGE_NAME
                 '''
             }
         }
@@ -68,9 +73,8 @@ pipeline {
         stage('🧪 Health Check') {
             steps {
                 sh '''
-                    sleep 5
-                    docker ps
-                    curl -f http://localhost:8021 || true
+                    sleep 10
+                    curl -f http://localhost:8021 || exit 1
                 '''
             }
         }
@@ -79,35 +83,35 @@ pipeline {
     post {
 
         success {
-            echo "✅ CI Pipeline completed successfully!"
+            echo "✅ Pipeline SUCCESS"
 
             slackSend (
                 channel: 'test',
                 color: 'good',
-                message: "✅ SUCCESS: Django Health App deployed successfully.\nJob: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+                message: "✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} deployed successfully"
             )
         }
 
         failure {
-            echo "❌ CI Pipeline failed!"
+            echo "❌ Pipeline FAILED"
 
             slackSend (
                 channel: 'test',
                 color: 'danger',
-                message: "❌ FAILED: Django Health App pipeline failed.\nJob: ${env.JOB_NAME} #${env.BUILD_NUMBER}\nCheck Jenkins logs."
+                message: "❌ FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
             )
         }
 
         always {
             sh '''
-                docker images
                 docker ps -a
+                docker images
             '''
 
             slackSend (
                 channel: 'alert',
                 color: '#439FE0',
-                message: "ℹ️ Jenkins job finished: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
+                message: "ℹ️ Job finished: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
             )
         }
     }
