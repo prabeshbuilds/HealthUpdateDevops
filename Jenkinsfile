@@ -20,16 +20,15 @@ pipeline {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
                         sonar-scanner \
-                          -Dsonar.projectKey=django-health-app \
-                          -Dsonar.projectName=django-health-app \
-                          -Dsonar.sources=. \
-                          -Dsonar.host.url=$SONAR_HOST_URL \
-                          -Dsonar.login=$SONAR_AUTH_TOKEN
+                        -Dsonar.projectKey=django-health-app \
+                        -Dsonar.projectName=django-health-app \
+                        -Dsonar.sources=. \
+                        -Dsonar.host.url=https://crystallizable-vigilant-sonja.ngrok-free.dev \
+                        -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
                 }
             }
         }
-
         stage('🚦 Quality Gate') {
             steps {
                 timeout(time: 2, unit: 'MINUTES') {
