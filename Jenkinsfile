@@ -23,7 +23,7 @@ pipeline {
                         -Dsonar.projectKey=django-health-app \
                         -Dsonar.projectName=django-health-app \
                         -Dsonar.sources=. \
-                        -Dsonar.host.url=https://crystallizable-vigilant-sonja.ngrok-free.dev \
+                        -Dsonar.host.url=https://crystallizable-vigilant-sonja.ngrok-free.dev
                         -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
                 }
