@@ -19,16 +19,19 @@ pipeline {
             steps {
                 withSonarQubeEnv('SonarQube') {
                     sh '''
-                        sonar-scanner \
+                        docker run --rm \
+                        -v "$PWD:/usr/src" \
+                        sonarsource/sonar-scanner-cli \
                         -Dsonar.projectKey=django-health-app \
                         -Dsonar.projectName=django-health-app \
-                        -Dsonar.sources=. \
-                        -Dsonar.host.url=https://crystallizable-vigilant-sonja.ngrok-free.dev
+                        -Dsonar.sources=/usr/src \
+                        -Dsonar.host.url=https://crystallizable-vigilant-sonja.ngrok-free.dev \
                         -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
                 }
             }
         }
+
         stage('🚦 Quality Gate') {
             steps {
                 timeout(time: 2, unit: 'MINUTES') {
@@ -79,22 +82,14 @@ pipeline {
 
         success {
             echo "✅ Pipeline SUCCESS"
-
-            slackSend (
-                channel: 'test',
-                color: 'good',
-                message: "✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER} deployed successfully"
-            )
+            slackSend channel: 'test', color: 'good',
+                message: "✅ SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
         }
 
         failure {
             echo "❌ Pipeline FAILED"
-
-            slackSend (
-                channel: 'test',
-                color: 'danger',
+            slackSend channel: 'test', color: 'danger',
                 message: "❌ FAILED: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-            )
         }
 
         always {
@@ -102,12 +97,6 @@ pipeline {
                 docker ps -a
                 docker images
             '''
-
-            slackSend (
-                channel: 'alert',
-                color: '#439FE0',
-                message: "ℹ️ Job finished: ${env.JOB_NAME} #${env.BUILD_NUMBER}"
-            )
         }
     }
 }
