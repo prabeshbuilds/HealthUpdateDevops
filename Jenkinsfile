@@ -1,10 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        SonarScanner 'SonarScanner'
-    }
-
     environment {
         IMAGE_NAME = "django_health_app"
         CONTAINER_NAME = "django_health_app"
