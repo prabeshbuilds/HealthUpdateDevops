@@ -1,6 +1,10 @@
 pipeline {
     agent any
 
+    tools {
+        sonarScanner 'SonarScanner'
+    }
+
     environment {
         IMAGE_NAME = "django_health_app"
     }
@@ -10,6 +14,29 @@ pipeline {
         stage('📥 Checkout Code') {
             steps {
                 git branch: 'main', url: 'https://github.com/prabeshbuilds/HealthUpdateDevops.git'
+            }
+        }
+
+        // 🔍 SonarQube Analysis
+        stage('🔍 SonarQube Analysis') {
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                    sh '''
+                        sonar-scanner \
+                          -Dsonar.projectKey=django-health-app \
+                          -Dsonar.sources=. \
+                          -Dsonar.host.url=$SONAR_HOST_URL
+                    '''
+                }
+            }
+        }
+
+        // 🚦 Quality Gate (WAIT FOR WEBHOOK)
+        stage('🚦 Quality Gate') {
+            steps {
+                timeout(time: 2, unit: 'MINUTES') {
+                    waitForQualityGate abortPipeline: true
+                }
             }
         }
 
