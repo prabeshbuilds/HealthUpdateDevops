@@ -55,16 +55,16 @@ pipeline {
             }
         }
 
-        stage('🚀 Run Container') {
+       stage('🚀 Run Container') {
             steps {
-                sh '''
-                    docker rm -f $CONTAINER_NAME || true
+                sh """
+                    docker rm -f ${CONTAINER_NAME} || true
 
                     docker run -d \
-                    --name $CONTAINER_NAME \
+                    --name ${CONTAINER_NAME} \
                     -p 8021:8000 \
-                    $IMAGE_NAME
-                '''
+                    ${IMAGE_NAME}
+                """
             }
         }
 
