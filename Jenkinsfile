@@ -25,7 +25,7 @@ pipeline {
                         -Dsonar.projectKey=django-health-app \
                         -Dsonar.projectName=django-health-app \
                         -Dsonar.sources=/usr/src \
-                        -Dsonar.host.url=https://957e-2405-acc0-1207-c28b-6fe7-6ca0-5f1-ec2f.ngrok-free.app \
+                        -Dsonar.host.url=https://b370-2405-acc0-1207-c28b-6fe7-6ca0-5f1-ec2f.ngrok-free.app \
                         -Dsonar.login=$SONAR_AUTH_TOKEN
                     '''
                 }
