@@ -58,10 +58,14 @@ pipeline {
        stage('🚀 Run Container') {
             steps {
                 sh """
-                    docker rm -f ${CONTAINER_NAME} || true
+                    set -e
+
+                    docker stop ${CONTAINER_NAME} || true
+                    docker rm ${CONTAINER_NAME} || true
 
                     docker run -d \
                     --name ${CONTAINER_NAME} \
+                    --restart unless-stopped \
                     -p 8021:8000 \
                     ${IMAGE_NAME}
                 """
